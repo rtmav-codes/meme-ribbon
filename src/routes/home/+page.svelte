@@ -19,8 +19,8 @@
             alt="Ribbon" 
             class="absolute transition-all duration-200"
             style="
-                left: {position.x}px;
-                top: {position.y}px;
+                left: {position.x - (ribbonWidth * scale) / 2}px;
+                top: {position.y - (ribbonHeight * scale) / 2}px;
                 transform: rotate({rotation}deg) scale({scale});
             "
         />
@@ -123,7 +123,11 @@
         }
     }
 
-    // Export the canvas as PNG
+    /**
+     * Exports the current canvas state as a PNG image.
+     * Handles both background and no-background scenarios while maintaining
+     * proper transformation order for the ribbon overlay.
+     */
     function exportImage() {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
@@ -132,31 +136,70 @@
         canvas.width = 500;
         canvas.height = 500;
 
-        // Draw background if exists
-        if (backgroundImage) {
-            const bgImg = new Image();
-            bgImg.onload = () => {
-                ctx.drawImage(bgImg, 0, 0, 500, 500);
-                exportFinal(canvas);
-            };
-            bgImg.src = backgroundImage;
-        } else {
-            exportFinal(canvas);
-        }
-    }
+        const ribbonImg = new Image();
+        ribbonImg.src = '/ribbon.png';
 
-    function exportFinal(canvas: HTMLCanvasElement) {
-        const link = document.createElement('a');
-        link.download = 'meme.png';
-        link.href = canvas.toDataURL('image/png');
-        link.click();
+        const loadImages = new Promise<void>((resolve) => {
+            ribbonImg.onload = () => {
+                if (backgroundImage) {
+                    const bgImg = new Image();
+                    bgImg.onload = () => {
+                        // Draw background
+                        ctx.drawImage(bgImg, 0, 0, 500, 500);
+                        
+                        // Draw ribbon with correct positioning
+                        ctx.save();
+                        ctx.translate(position.x, position.y);
+                        ctx.rotate((rotation * Math.PI) / 180);
+                        ctx.scale(scale, scale);
+                        ctx.drawImage(
+                            ribbonImg,
+                            -ribbonImg.width / 2,
+                            -ribbonImg.height / 2
+                        );
+                        ctx.restore();
+                        resolve();
+                    };
+                    bgImg.src = backgroundImage;
+                } else {
+                    ctx.fillStyle = 'white';
+                    ctx.fillRect(0, 0, 500, 500);
+                    
+                    ctx.save();
+                    ctx.translate(position.x, position.y);
+                    ctx.rotate((rotation * Math.PI) / 180);
+                    ctx.scale(scale, scale);
+                    ctx.drawImage(
+                        ribbonImg,
+                        -ribbonImg.width / 2,
+                        -ribbonImg.height / 2
+                    );
+                    ctx.restore();
+                    resolve();
+                }
+            };
+        });
+
+        loadImages.then(() => {
+            const link = document.createElement('a');
+            link.download = 'meme.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
     }
 
     onMount(() => {
         // Initialize any necessary setup
+        // Initialize ribbon dimensions
+        const ribbonImg = new Image();
+        ribbonImg.src = '/ribbon.png';
+        ribbonImg.onload = () => {
+            ribbonWidth = ribbonImg.width;
+            ribbonHeight = ribbonImg.height;
+        };
     });
 
     // Calculate position limits based on ribbon size and scale
-    $: xLimit = 500 - (ribbonWidth * scale);
-    $: yLimit = 500 - (ribbonHeight * scale);
+    $: xLimit = 1000 - (ribbonWidth * scale);
+    $: yLimit = 1000 - (ribbonHeight * scale);
 </script>
