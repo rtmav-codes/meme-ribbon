@@ -12,7 +12,7 @@
                     href="/home"
                     class="text-lg font-bold text-[#f35087]"
                     >
-                    🎀 Home
+                    🎀 Meme Generator
                 </a>
             </li>
         </ul>
@@ -27,7 +27,7 @@
     <div class="navbar-center hidden lg:flex flex-row flex-wrap justify-center items-center">
       <ul class="menu menu-horizontal px-1 font-bold text-xl">
         <li>   
-            <a href="/home"> 🎀 Home</a>
+            <a href="/home"> 🎀 Meme Generator</a>
         </li>
       </ul>
     </div>
