@@ -23,9 +23,9 @@
                 alt="Ribbon" 
                 class="absolute transition-all duration-200 cursor-move {isDragging ? 'drop-shadow-2xl scale-105' : ''}"
                 style="
-                    left: {position.x - (ribbonWidth * scale) / 2}px;
-                    top: {position.y - (ribbonHeight * scale) / 2}px;
-                    transform: rotate({rotation}deg) scale({scale});
+                    left: {position.x}px;
+                    top: {position.y}px;
+                    transform: translate(-50%, -50%) rotate({rotation}deg) scale({scale});
                     user-select: none;
                     transition: filter 0.1s ease-out, transform 0.1s ease-out;
                 "
