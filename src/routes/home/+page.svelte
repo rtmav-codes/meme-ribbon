@@ -1,14 +1,14 @@
 <!-- Landing/Splash Page -->
 
-<!-- Main container with gradient background -->
-<div class="h-screen w-screen bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-rose-300 via-pink-300 to-pink-100 text-white p-4 overflow-y-auto">
-    <!-- Content wrapper -->
-    <div class="flex flex-col items-center justify-start max-w-screen-xl mx-auto">
+<!-- Main container - updated to remove fixed height and width -->
+<div class="min-h-screen w-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-rose-300 via-pink-300 to-pink-100 text-white p-4">
+    <!-- Content wrapper - updated padding -->
+    <div class="flex flex-col items-center justify-start max-w-screen-xl mx-auto gap-4">
         
-        <h1 class="text-3xl font-bold text-center text-[#f35087] mt-5 mb-3"> 🎀 Meme Generator</h1>
+        <h1 class="text-2xl md:text-3xl font-bold text-center text-[#f35087]">🎀 Meme Generator</h1>
 
-        <!-- Image Canvas Container - Added min-height to maintain size -->
-        <div class="relative bg-white shadow-lg rounded-lg overflow-hidden flex-shrink-0" 
+        <!-- Image Canvas Container - updated to be responsive -->
+        <div class="relative bg-white shadow-lg rounded-lg overflow-hidden flex-shrink-0 w-[250px] h-[250px] md:w-[500px] md:h-[500px]" 
              style="width: {canvasWidth}px; height: {canvasHeight}px">
             {#if backgroundImage}
                 <img 
@@ -34,8 +34,8 @@
             />
         </div>
 
-        <!-- Controls Panel -->
-        <div class="mt-4 bg-white/20 backdrop-blur-sm p-4 rounded-lg w-full max-w-xl"> 
+        <!-- Controls Panel - updated width -->
+        <div class="bg-white/20 backdrop-blur-sm p-3 md:p-4 rounded-lg w-full max-w-[250px] md:max-w-xl"> 
             <!-- Position Controls -->
             <div class="flex flex-col gap-4 mb-4">
                 <div>
@@ -93,9 +93,9 @@
             </div>
 
             <!-- File Upload and Export -->
-            <div class="flex gap-4">
-                <label class="btn btn-sm">
-                    Upload Background
+            <div class="flex flex-row lg:flex-col gap-4">
+                <label class="btn btn-sm flex-1 lg:flex-none">
+                    <span class="whitespace-normal text-center">Upload Background</span>
                     <input 
                         type="file" 
                         accept="image/*" 
@@ -103,14 +103,14 @@
                         class="hidden"
                     >
                 </label>
-                <button class="btn btn-sm" on:click={exportImage}>
-                    Export Meme
+                <button class="btn btn-sm flex-1 lg:flex-none">
+                    <span class="whitespace-normal text-center">Export Meme</span>
                 </button>
             </div>
         </div>
 
-        <!-- How to Use Section -->
-        <div class="w-full max-w-xl mx-auto mt-8 p-4 bg-white/20 backdrop-blur-sm rounded-lg text-[#e2316c]">
+        <!-- How to Use Section - updated width -->
+        <div class="w-full max-w-[250px] md:max-w-xl mx-auto p-3 md:p-4 bg-white/20 backdrop-blur-sm rounded-lg text-[#e2316c]">
             <h2 class="text-xl font-bold mb-3">How to Use</h2>
             <ul class="list-disc list-inside space-y-2">
                 <li>Upload a background image using the "Upload Background" button</li>
@@ -131,8 +131,8 @@
     let windowWidth: number;
     
     // Modified initial canvas dimensions
-    let canvasWidth = windowWidth && windowWidth < 768 ? 250 : 500;
-    let canvasHeight = windowWidth && windowWidth < 768 ? 250 : 500;
+    let canvasWidth = 250;
+    let canvasHeight = 250;
     
     // Update position based on initial canvas size
     let position = { 
@@ -164,18 +164,21 @@
                 img.onload = () => {
                     // Calculate new dimensions maintaining aspect ratio
                     const aspectRatio = img.width / img.height;
-                    const maxWidth = windowWidth < 768 ? 250 : 500;
-                    const maxHeight = windowWidth < 768 ? 250 : 500;
+                    const maxSize = windowWidth < 768 ? 250 : 500;
                     
                     if (aspectRatio > 1) {
-                        canvasWidth = maxWidth;
-                        canvasHeight = maxWidth / aspectRatio;
+                        canvasWidth = maxSize;
+                        canvasHeight = maxSize / aspectRatio;
                     } else {
-                        canvasHeight = maxHeight;
-                        canvasWidth = maxHeight * aspectRatio;
+                        canvasHeight = maxSize;
+                        canvasWidth = maxSize * aspectRatio;
                     }
                     
-                    // Update position to center of new dimensions
+                    // Ensure dimensions don't exceed maxSize
+                    canvasWidth = Math.min(canvasWidth, maxSize);
+                    canvasHeight = Math.min(canvasHeight, maxSize);
+                    
+                    // Update position to center
                     position = { 
                         x: canvasWidth / 2, 
                         y: canvasHeight / 2 
@@ -301,14 +304,13 @@
     }
 
     onMount(() => {
-        // Add window resize listener
         windowWidth = window.innerWidth;
         window.addEventListener('resize', () => {
             windowWidth = window.innerWidth;
             if (!backgroundImage) {
-                // Only update canvas size if no image is uploaded
-                canvasWidth = windowWidth < 768 ? 250 : 500;
-                canvasHeight = windowWidth < 768 ? 250 : 500;
+                const maxSize = windowWidth < 768 ? 250 : 500;
+                canvasWidth = maxSize;
+                canvasHeight = maxSize;
                 position = { 
                     x: canvasWidth / 2, 
                     y: canvasHeight / 2 
