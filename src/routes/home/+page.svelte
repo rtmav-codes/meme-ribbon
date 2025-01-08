@@ -7,8 +7,8 @@
         
         <h1 class="text-2xl md:text-3xl font-bold text-center text-[#f35087]">🎀 Meme Generator</h1>
 
-        <!-- Image Canvas Container - updated to be responsive -->
-        <div class="relative bg-white shadow-lg rounded-lg overflow-hidden flex-shrink-0 w-[250px] h-[250px] md:w-[500px] md:h-[500px]" 
+        <!-- Image Canvas Container - updated size classes -->
+        <div class="relative bg-white shadow-lg rounded-lg overflow-hidden flex-shrink-0 w-[200px] h-[200px] sm:w-[300px] sm:h-[300px] md:w-[500px] md:h-[500px]" 
              style="width: {canvasWidth}px; height: {canvasHeight}px">
             {#if backgroundImage}
                 <img 
@@ -103,7 +103,7 @@
                         class="hidden"
                     >
                 </label>
-                <button class="btn btn-sm flex-1 lg:flex-none">
+                <button class="btn btn-sm flex-1 lg:flex-none" on:click={exportImage}>
                     <span class="whitespace-normal text-center">Export Meme</span>
                 </button>
             </div>
@@ -130,9 +130,10 @@
     // Add window width tracking
     let windowWidth: number;
     
-    // Modified initial canvas dimensions
-    let canvasWidth = 250;
-    let canvasHeight = 250;
+    // Update initial canvas dimensions with new sizes
+    let canvasWidth = window.innerWidth < 640 ? 200 : 
+                      window.innerWidth < 768 ? 300 : 500;
+    let canvasHeight = canvasWidth; // Keep it square initially
     
     // Update position based on initial canvas size
     let position = { 
@@ -164,21 +165,18 @@
                 img.onload = () => {
                     // Calculate new dimensions maintaining aspect ratio
                     const aspectRatio = img.width / img.height;
-                    const maxSize = windowWidth < 768 ? 250 : 500;
+                    const maxSize = windowWidth < 640 ? 200 : 
+                                  windowWidth < 768 ? 300 : 500;
                     
                     if (aspectRatio > 1) {
-                        canvasWidth = maxSize;
-                        canvasHeight = maxSize / aspectRatio;
+                        canvasWidth = Math.min(maxSize, img.width);
+                        canvasHeight = canvasWidth / aspectRatio;
                     } else {
-                        canvasHeight = maxSize;
-                        canvasWidth = maxSize * aspectRatio;
+                        canvasHeight = Math.min(maxSize, img.height);
+                        canvasWidth = canvasHeight * aspectRatio;
                     }
                     
-                    // Ensure dimensions don't exceed maxSize
-                    canvasWidth = Math.min(canvasWidth, maxSize);
-                    canvasHeight = Math.min(canvasHeight, maxSize);
-                    
-                    // Update position to center
+                    // Center the position after resize
                     position = { 
                         x: canvasWidth / 2, 
                         y: canvasHeight / 2 
@@ -308,7 +306,8 @@
         window.addEventListener('resize', () => {
             windowWidth = window.innerWidth;
             if (!backgroundImage) {
-                const maxSize = windowWidth < 768 ? 250 : 500;
+                const maxSize = windowWidth < 640 ? 200 : 
+                               windowWidth < 768 ? 300 : 500;
                 canvasWidth = maxSize;
                 canvasHeight = maxSize;
                 position = { 
