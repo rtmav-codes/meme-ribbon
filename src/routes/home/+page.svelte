@@ -190,34 +190,85 @@
     }
 
     /**
-     * Exports the current canvas state as a PNG image.
-     * Handles both background and no-background scenarios while maintaining
-     * proper transformation order for the ribbon overlay.
+     * Scales down an image if it exceeds maximum dimensions
+     */
+    function scaleImage(img: HTMLImageElement, maxWidth: number, maxHeight: number) {
+        let width = img.width;
+        let height = img.height;
+        
+        // Calculate aspect ratio
+        const aspectRatio = width / height;
+
+        // Scale down if image is too large
+        if (width > maxWidth || height > maxHeight) {
+            if (aspectRatio > 1) {
+                width = maxWidth;
+                height = width / aspectRatio;
+            } else {
+                height = maxHeight;
+                width = height * aspectRatio;
+            }
+        }
+
+        // Create temporary canvas for scaling
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = width;
+        tempCanvas.height = height;
+        const tempCtx = tempCanvas.getContext('2d');
+        
+        if (!tempCtx) return null;
+        
+        // Use better image smoothing
+        tempCtx.imageSmoothingEnabled = true;
+        tempCtx.imageSmoothingQuality = 'high';
+        
+        // Draw scaled image
+        tempCtx.drawImage(img, 0, 0, width, height);
+        
+        return tempCanvas;
+    }
+
+    /**
+     * Modified export function with high-quality scaling
      */
     function exportImage() {
+        const container = document.querySelector('.relative') as HTMLElement;
+        if (!container) return;
+        
+        const rect = container.getBoundingClientRect();
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        canvas.width = canvasWidth;
-        canvas.height = canvasHeight;
-
+        // Scale factor for high quality export (2x for retina, 3x for high-res)
+        const scaleFactor = window.innerWidth <= 768 ? 3 : 2;
+        
+        // Set canvas dimensions with scale factor
+        canvas.width = rect.width * scaleFactor;
+        canvas.height = rect.height * scaleFactor;
+        
+        // Enable high-quality scaling
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        
         const ribbonImg = new Image();
+        ribbonImg.crossOrigin = 'anonymous';
         ribbonImg.src = '/ribbon.png';
 
         const loadImages = new Promise<void>((resolve) => {
             ribbonImg.onload = () => {
                 if (backgroundImage) {
                     const bgImg = new Image();
+                    bgImg.crossOrigin = 'anonymous';
                     bgImg.onload = () => {
-                        // Draw background
-                        ctx.drawImage(bgImg, 0, 0, canvasWidth, canvasHeight);
+                        // Draw background with scaling
+                        ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
                         
-                        // Draw ribbon with correct positioning
+                        // Draw ribbon with correct positioning and scaling
                         ctx.save();
-                        ctx.translate(position.x, position.y);
+                        ctx.translate(position.x * scaleFactor, position.y * scaleFactor);
                         ctx.rotate((rotation * Math.PI) / 180);
-                        ctx.scale(scale, scale);
+                        ctx.scale(scale * scaleFactor, scale * scaleFactor);
                         ctx.drawImage(
                             ribbonImg,
                             -ribbonImg.width / 2,
@@ -228,13 +279,15 @@
                     };
                     bgImg.src = backgroundImage;
                 } else {
+                    // Fill white background
                     ctx.fillStyle = 'white';
-                    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
                     
+                    // Draw ribbon with correct positioning and scaling
                     ctx.save();
-                    ctx.translate(position.x, position.y);
+                    ctx.translate(position.x * scaleFactor, position.y * scaleFactor);
                     ctx.rotate((rotation * Math.PI) / 180);
-                    ctx.scale(scale, scale);
+                    ctx.scale(scale * scaleFactor, scale * scaleFactor);
                     ctx.drawImage(
                         ribbonImg,
                         -ribbonImg.width / 2,
@@ -249,7 +302,8 @@
         loadImages.then(() => {
             const link = document.createElement('a');
             link.download = 'meme.png';
-            link.href = canvas.toDataURL('image/png');
+            // Use maximum quality for PNG export
+            link.href = canvas.toDataURL('image/png', 1.0);
             link.click();
         });
     }
