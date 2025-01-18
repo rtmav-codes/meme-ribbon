@@ -33,6 +33,19 @@
     </div>
 
     <div class="navbar-end text-[#fec7de]">
+      <!-- Audio Controls -->
+        <button 
+            class="btn bg-black hover:bg-black mr-2 text-2xl"
+            on:click={toggleAudio}
+        >
+            {#if isPlaying}
+                🔊
+            {:else}
+                🔈
+            {/if}
+        </button>
+
+
       <a 
         href="https://www.emojicoin.fun/market/ribbon" 
         target="_blank" 
@@ -47,7 +60,29 @@
   <script lang="ts">
     import { onMount } from 'svelte';
 
+    let isPlaying = false;
+    let audio: HTMLAudioElement;
+    
+    function toggleAudio() {
+        if (!audio) {
+            audio = new Audio('/ribbon.mp3');
+        }
+        
+        if (isPlaying) {
+            audio.pause();
+        } else {
+            audio.play();
+        }
+        isPlaying = !isPlaying;
+    }
+
     onMount(() => {
-        console.log('Hello World');
+        audio = new Audio('/ribbon.mp3');
+        return () => {
+            if (audio) {
+                audio.pause();
+                audio = null;
+            }
+        };
     }); 
 </script>
