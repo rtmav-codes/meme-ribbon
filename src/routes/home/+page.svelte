@@ -34,7 +34,7 @@
             />
         </div>
 
-        <!-- Controls Panel - updated width -->
+        <!-- Controls Panel -->
         <div class="bg-white/20 backdrop-blur-sm p-3 md:p-4 rounded-lg w-full max-w-[250px] md:max-w-xl"> 
             <!-- Position Controls -->
             <div class="flex flex-col gap-4 mb-4">
@@ -93,8 +93,8 @@
             </div>
 
             <!-- File Upload and Export -->
-            <div class="flex flex-row lg:flex-col gap-4">
-                <label class="btn btn-sm flex-1 lg:flex-none">
+            <div class="flex flex-col gap-4">
+                <label class="btn btn-sm">
                     <span class="whitespace-normal text-center">Upload Background</span>
                     <input 
                         type="file" 
@@ -103,20 +103,41 @@
                         class="hidden"
                     >
                 </label>
-                <button class="btn btn-sm flex-1 lg:flex-none" on:click={exportImage}>
-                    <span class="whitespace-normal text-center">Export Meme</span>
-                </button>
+                <div class="flex flex-row gap-2 items-center">
+                    <button class="btn btn-sm flex-1" on:click={() => exportImage(false)}>
+                        <span class="whitespace-normal text-center">Export 1:1</span>
+                    </button>
+                    <button class="btn btn-sm flex-1" on:click={() => exportImage(true)}>
+                        <span class="whitespace-normal text-center">Export 3:1</span>
+                    </button>
+                </div>
             </div>
         </div>
 
-        <!-- How to Use Section - updated width -->
+        <!-- Error Modal -->
+        {#if showError}
+            <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <div class="bg-white p-6 rounded-lg max-w-sm mx-4">
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">Invalid Image Ratio</h3>
+                    <p class="text-gray-700 mb-4">Please upload an image with either a 1:1 or 3:1 aspect ratio.</p>
+                    <button 
+                        class="btn btn-sm w-full"
+                        on:click={() => showError = false}
+                    >
+                        Okay
+                    </button>
+                </div>
+            </div>
+        {/if}
+
+        <!-- How to Use Section -->
         <div class="w-full max-w-[250px] md:max-w-xl mx-auto p-3 md:p-4 bg-white/20 backdrop-blur-sm rounded-lg text-[#e2316c]">
             <h2 class="text-xl font-bold mb-3">How to Use</h2>
             <ul class="list-disc list-inside space-y-2">
-                <li>Upload a background image using the "Upload Background" button</li>
+                <li>Upload a background image (1:1 or 3:1 ratio) using the "Upload Background" button</li>
                 <li>Drag the ribbon directly on the canvas or use the sliders to position it</li>
                 <li>Adjust the rotation and size using the respective sliders</li>
-                <li>When satisfied, click "Export Meme" to download your creation</li>
+                <li>Choose between 1:1 or 3:1 export ratio and click to download your creation</li>
             </ul>
         </div>
     </div>
@@ -155,7 +176,9 @@
     let dragStartPos = { x: 0, y: 0 };
     let initialPosition = { x: 0, y: 0 };
 
-    // Handle background image upload
+    let showError = false;
+
+    // Modified handleFileUpload function
     function handleFileUpload(event: Event) {
         const input = event.target as HTMLInputElement;
         if (input.files && input.files[0]) {
@@ -163,27 +186,31 @@
             reader.onload = (e) => {
                 const img = new Image();
                 img.onload = () => {
-                    // Calculate new dimensions maintaining aspect ratio
                     const aspectRatio = img.width / img.height;
+                    
+                    // Check for valid aspect ratios (allowing small margin of error)
+                    const isValidRatio = Math.abs(aspectRatio - 1) < 0.1 || Math.abs(aspectRatio - 3) < 0.1;
+                    
+                    if (!isValidRatio) {
+                        showError = true;
+                        input.value = ''; // Reset input
+                        return;
+                    }
+
                     const maxSize = windowWidth < 640 ? 200 : 
                                   windowWidth < 768 ? 300 : 500;
                     
-                    if (aspectRatio > 1) {
-                        canvasWidth = Math.min(maxSize, img.width);
-                        canvasHeight = canvasWidth / aspectRatio;
-                    } else {
-                        canvasHeight = Math.min(maxSize, img.height);
-                        canvasWidth = canvasHeight * aspectRatio;
-                    }
+                    canvasWidth = Math.min(maxSize, img.width);
+                    canvasHeight = canvasWidth / aspectRatio;
                     
-                    // Center the position after resize
                     position = { 
                         x: canvasWidth / 2, 
                         y: canvasHeight / 2 
                     };
+                    
+                    backgroundImage = e.target?.result as string;
                 };
                 img.src = e.target?.result as string;
-                backgroundImage = e.target?.result as string;
             };
             reader.readAsDataURL(input.files[0]);
         }
@@ -228,10 +255,8 @@
         return tempCanvas;
     }
 
-    /**
-     * Modified export function with high-quality scaling
-     */
-    function exportImage() {
+    // Modified exportImage function
+    function exportImage(isWide: boolean) {
         const container = document.querySelector('.relative') as HTMLElement;
         if (!container) return;
         
@@ -240,12 +265,16 @@
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        // Scale factor for high quality export (2x for retina, 3x for high-res)
         const scaleFactor = window.innerWidth <= 768 ? 3 : 2;
         
-        // Set canvas dimensions with scale factor
-        canvas.width = rect.width * scaleFactor;
-        canvas.height = rect.height * scaleFactor;
+        // Set canvas dimensions based on export ratio
+        if (isWide) {
+            canvas.width = rect.width * scaleFactor * 3;
+            canvas.height = rect.width * scaleFactor;
+        } else {
+            canvas.width = rect.width * scaleFactor;
+            canvas.height = rect.width * scaleFactor;
+        }
         
         // Enable high-quality scaling
         ctx.imageSmoothingEnabled = true;
