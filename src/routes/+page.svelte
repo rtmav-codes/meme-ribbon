@@ -59,6 +59,27 @@
     >
         Continue
     </button>
+
+    <!-- Add this modal markup just before the closing main container div -->
+    {#if showModal}
+        <div class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div class="bg-white rounded-lg p-6 max-w-sm w-full text-center">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">Invalid Image Format</h3>
+                <p class="text-gray-600 mb-6">
+                    Please upload an image with either a 1:1 (square) or 3:1 (banner) aspect ratio.
+                </p>
+                <button 
+                    class="btn bg-[#f35087] text-white hover:bg-[#d93d6f]"
+                    on:click={() => {
+                        showModal = false;
+                        backgroundImage = null;
+                    }}
+                >
+                    Try Again
+                </button>
+            </div>
+        </div>
+    {/if}
 </div>
 
 <!-- Svelte script section -->
@@ -68,6 +89,7 @@
     let isDragging = false;
     let fileInput: HTMLInputElement;
     let backgroundImage: string | null = null;
+    let showModal = false;
     
     function handleDragEnter(event: DragEvent) {
         event.preventDefault();
@@ -98,8 +120,21 @@
         }
     }
     
+    function isValidAspectRatio(width: number, height: number): boolean {
+        const ratio = width / height;
+        const tolerance = 0.1; // Allow 10% deviation from exact ratios
+        
+        // Check for 1:1 ratio (square)
+        if (Math.abs(ratio - 1) <= tolerance) return true;
+        
+        // Check for 3:1 ratio (banner)
+        if (Math.abs(ratio - 3) <= tolerance) return true;
+        
+        return false;
+    }
+    
     async function processFile(file: File) {
-        const maxWidth = window.innerWidth >= 640 ? 500 : 250; // 640px is Tailwind's 'sm' breakpoint
+        const maxWidth = window.innerWidth >= 640 ? 500 : 250;
         const maxHeight = maxWidth;
 
         const img = new Image();
@@ -110,6 +145,12 @@
         };
 
         img.onload = () => {
+            // Check aspect ratio before processing
+            if (!isValidAspectRatio(img.width, img.height)) {
+                showModal = true;
+                return;
+            }
+
             const canvas = document.createElement('canvas');
             let width = img.width;
             let height = img.height;
